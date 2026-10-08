@@ -2,7 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { FitBoundsOptions, GeoJSONSource, LngLatBoundsLike, Map as MapLibreMap, Marker } from "maplibre-gl";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Region } from "@/lib/regions";
 import type { Hotspot } from "@/lib/run-view";
 
@@ -24,26 +24,10 @@ const WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
 
 const emptyCollection: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
 
-// Same values as globals.css, used if the CSS variables can't be read yet.
-const FALLBACK: Record<"light" | "dark", Colors> = {
-  light: { accent: "#c93a17", ink: "#1d1a16", paper: "#f3ede2" },
-  dark: { accent: "#e8582f", ink: "#eee6d8", paper: "#1b1916" },
-};
-
-const DARK_QUERY = "(prefers-color-scheme: dark)";
-
-function subscribeScheme(onChange: () => void) {
-  const query = window.matchMedia(DARK_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-function readColors(dark: boolean): Colors {
-  const css = getComputedStyle(document.documentElement);
-  const fallback = FALLBACK[dark ? "dark" : "light"];
-  const get = (name: keyof Colors) => css.getPropertyValue(`--${name}`).trim() || fallback[name];
-  return { accent: get("accent"), ink: get("ink"), paper: get("paper") };
-}
+// The map always uses the light basemap, so its colors are the light theme's,
+// whatever theme the page is in.
+const COLORS: Colors = { accent: "#c93a17", ink: "#1d1a16", paper: "#f3ede2" };
+const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 
 /**
  * Region map. Shows every routable city, then grows rings where the Qloo
@@ -59,12 +43,6 @@ export function RouteMap({ region, hotspots, scouted, stops, fitToStops }: Props
   // Last framing, reapplied without animation when the map changes size.
   const framing = useRef<[LngLatBoundsLike, FitBoundsOptions] | null>(null);
   const [ready, setReady] = useState(false);
-  // Map tiles and paint colors follow the OS theme, so rebuild on a change.
-  const dark = useSyncExternalStore(
-    subscribeScheme,
-    () => window.matchMedia(DARK_QUERY).matches,
-    () => false,
-  );
 
   useEffect(() => {
     let cancelled = false;
@@ -74,11 +52,10 @@ export function RouteMap({ region, hotspots, scouted, stops, fitToStops }: Props
         if (cancelled || !container.current) return;
         maplibre.setWorkerUrl(WORKER_URL);
         markerClass.current = maplibre.Marker;
-        const colors = readColors(dark);
 
         const map = new maplibre.Map({
           container: container.current,
-          style: `https://tiles.openfreemap.org/styles/${dark ? "dark" : "positron"}`,
+          style: STYLE_URL,
           bounds: region.bbox,
           fitBoundsOptions: { padding: 40 },
           attributionControl: { compact: true },
@@ -101,10 +78,10 @@ export function RouteMap({ region, hotspots, scouted, stops, fitToStops }: Props
             source: "cities",
             filter: [">", ["get", "score"], 0],
             paint: {
-              "circle-color": colors.accent,
+              "circle-color": COLORS.accent,
               "circle-opacity": 0.2,
               "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 6, 1, 30],
-              "circle-stroke-color": colors.accent,
+              "circle-stroke-color": COLORS.accent,
               "circle-stroke-width": 1.5,
               "circle-stroke-opacity": 0.7,
             },
@@ -115,8 +92,8 @@ export function RouteMap({ region, hotspots, scouted, stops, fitToStops }: Props
             source: "cities",
             paint: {
               "circle-radius": ["match", ["get", "state"], "scouting", 7, "scouted", 6, 3.5],
-              "circle-color": ["match", ["get", "state"], "scouting", colors.paper, "scouted", colors.accent, colors.ink],
-              "circle-stroke-color": ["match", ["get", "state"], "idle", colors.paper, colors.ink],
+              "circle-color": ["match", ["get", "state"], "scouting", COLORS.paper, "scouted", COLORS.accent, COLORS.ink],
+              "circle-stroke-color": ["match", ["get", "state"], "idle", COLORS.paper, COLORS.ink],
               "circle-stroke-width": ["match", ["get", "state"], "idle", 1, 2],
             },
           });
@@ -125,14 +102,14 @@ export function RouteMap({ region, hotspots, scouted, stops, fitToStops }: Props
             type: "line",
             source: "route",
             layout: { "line-cap": "round", "line-join": "round" },
-            paint: { "line-color": colors.ink, "line-width": 6 },
+            paint: { "line-color": COLORS.ink, "line-width": 6 },
           });
           map.addLayer({
             id: "route-line",
             type: "line",
             source: "route",
             layout: { "line-cap": "round", "line-join": "round" },
-            paint: { "line-color": colors.accent, "line-width": 3.5 },
+            paint: { "line-color": COLORS.accent, "line-width": 3.5 },
           });
           setReady(true);
         });
@@ -151,9 +128,9 @@ export function RouteMap({ region, hotspots, scouted, stops, fitToStops }: Props
       framing.current = null;
       setReady(false);
     };
-    // The map is built once per theme; region changes are handled below.
+    // The map is built once; region changes are handled below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dark]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -14,6 +14,7 @@ import { deriveRun } from "@/lib/run-view";
 import { AgentLog, SavedBar } from "./agent-log";
 import { ArtistField, type Artist } from "./artist-field";
 import { RouteMap, type MapStop } from "./route-map";
+import { ThemeToggle } from "./theme-toggle";
 import { IntroPoster, PlanNotes, PlanPoster } from "./tour-poster";
 
 type PlanRequest = { artist: { qlooId: string; name: string }; regionId: string; stops: number };
@@ -149,17 +150,18 @@ export function TourPlanner({ demoData, initial }: { demoData: boolean; initial?
 
   return (
     <div className="mx-auto max-w-[1360px] px-4 sm:px-10">
-      <header className="grid grid-cols-1 items-end gap-x-10 gap-y-2 border-b-[3px] border-ink pt-7 pb-5.5 md:grid-cols-[auto_minmax(0,1fr)]">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-10 gap-y-2 border-b-[3px] border-ink pt-7 pb-5.5 md:grid-cols-[auto_minmax(0,1fr)_auto]">
         <Link href="/" className="flex items-center gap-2.5 font-display text-[30px] leading-none font-extrabold tracking-[-0.02em]">
           <span aria-hidden className="inline-block size-3.5 rounded-full bg-accent" />
           Tourwise
         </Link>
-        <p className="max-w-[52ch] text-muted">
+        <ThemeToggle className="self-center md:order-2" />
+        <p className="col-span-2 max-w-[52ch] text-muted md:order-1 md:col-span-1">
           Tour routing for independent artists, built on Qloo taste data.
         </p>
 
         <form
-          className="relative mt-4.5 grid grid-cols-[minmax(0,1fr)_96px] border-2 border-ink bg-paper md:col-span-2 md:grid-cols-[minmax(0,2.2fr)_minmax(13rem,1.2fr)_96px_auto]"
+          className="relative col-span-2 mt-4.5 grid grid-cols-[minmax(0,1fr)_96px] border-2 border-ink bg-paper md:order-3 md:col-span-3 md:grid-cols-[minmax(0,2.2fr)_minmax(13rem,1.2fr)_96px_auto]"
           onSubmit={(e) => {
             e.preventDefault();
             if (!active) plan(false);
@@ -217,7 +219,7 @@ export function TourPlanner({ demoData, initial }: { demoData: boolean; initial?
           </button>
         </form>
         {formError && (
-          <p role="alert" className="text-sm font-medium text-accent md:col-span-2">
+          <p role="alert" className="col-span-2 text-sm font-medium text-accent md:order-3 md:col-span-3">
             {formError}
           </p>
         )}
@@ -328,7 +330,6 @@ function MapCaption({
   return (
     <div className="flex flex-wrap justify-between gap-x-4 pt-2 text-xs text-muted">
       <span>{text}</span>
-      <span>Map: OpenFreeMap, OpenStreetMap</span>
     </div>
   );
 }

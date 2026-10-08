@@ -49,3 +49,8 @@ next-env.d.ts
 /design-options
 /.impeccable
 /.playwright-mcp
+
+# agent skills installed locally by the Vercel CLI
+/.agents
+/.claude
+/skills-lock.json

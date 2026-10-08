@@ -51,7 +51,7 @@ npm run dev
 | `QLOO_API_KEY` | No (mock data without it) | Qloo hackathon form |
 | `GEMINI_API_KEY` | One LLM key is needed | https://aistudio.google.com/apikey |
 | `MISTRAL_API_KEY` | One LLM key is needed | https://console.mistral.ai/api-keys |
-| `DATABASE_URL` | No (memory cache without it) | Neon Postgres, via the Vercel Marketplace |
+| `DATABASE_URL` | No (memory cache without it) | Neon Postgres (Free plan), added by the Vercel Marketplace integration |
 | `QLOO_DAILY_CAP` | No (default 300) | Max live Qloo calls per UTC day |
 
 ## API
