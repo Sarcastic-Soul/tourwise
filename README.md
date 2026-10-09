@@ -2,6 +2,9 @@
 
 A tour-routing agent for independent musicians, built for the Qloo Agentic Hackathon 2026.
 
+- Live demo: https://tourwise-tau.vercel.app
+- Devpost: https://devpost.com/software/tourwise
+
 Give it an artist and a region. The agent uses Qloo's taste graph to find the cities where that
 artist's audience is concentrated. For each city it picks a venue whose crowd matches, a local
 support act with an overlapping audience, and brands that audience likes (for sponsors and merch).
@@ -18,7 +21,7 @@ artist + region
 ToolLoopAgent (Vercel AI SDK)
    ├─ audience_hotspots  → Qloo heatmap over the region, matched to cities
    ├─ audience_profile   → Qloo demographics + similar artists
-   ├─ scout_city (×N)    → Qloo places, artists, brands near each city
+   ├─ scout_city (×N)    → Qloo music venues, artists, brands near each city
    ├─ plan_route         → orders stops by distance (our code, no LLM)
    └─ submit_plan        → final structured plan, streamed to the UI
 ```
@@ -33,6 +36,8 @@ ToolLoopAgent (Vercel AI SDK)
   and makes no new Qloo calls.
 - **LLM**: free-tier chain with automatic failover: Gemini 3.5 Flash Lite → Gemini 3.1 Flash Lite →
   Mistral `ministral-14b` (`src/lib/llm/`).
+- **Venues**: place results are filtered to Qloo's live music venue, concert hall, night club and
+  live music bar tags, so parks and landmarks don't show up as venues.
 - **Mock mode**: with no `QLOO_API_KEY`, the app serves made-up data in the real Qloo response shape
   (`src/lib/qloo/mock.ts`). All mock names are fictional.
 
