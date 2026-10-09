@@ -143,10 +143,20 @@ export async function audienceHotspots(artistId: string, region: Region, take = 
     .slice(0, take);
 }
 
-/** Places near the city whose crowd matches the artist's audience. */
+// Place tags for rooms that host gigs. Without them Qloo also returns parks,
+// landmarks and cafes. A comma list in filter.tags matches any of them.
+const VENUE_TAGS = [
+  "urn:tag:genre:place:live_music_venue",
+  "urn:tag:genre:place:concert_hall",
+  "urn:tag:genre:place:night_club",
+  "urn:tag:category:place:live_music_bar",
+];
+
+/** Music venues near the city whose crowd matches the artist's audience. */
 export async function venuesNear(artistId: string, city: City, take = 6): Promise<PlaceSummary[]> {
   const response = await qloo.insights({
     "filter.type": "urn:entity:place",
+    "filter.tags": VENUE_TAGS,
     "signal.interests.entities": artistId,
     "filter.location": point(city),
     "filter.location.radius": 15000,

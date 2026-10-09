@@ -1,7 +1,7 @@
 import "server-only";
 import { isStepCount, ToolLoopAgent, tool, type InferAgentUIMessage } from "ai";
 import { z } from "zod";
-import { orderRoute } from "../geo";
+import { distanceKm, orderRoute } from "../geo";
 import { agentModel } from "../llm/models";
 import {
   audienceHotspots,
@@ -48,12 +48,41 @@ export function createTourAgent(request: TourRequest) {
   const cityByName = new Map(region.cities.map((c) => [c.name.toLowerCase(), c]));
   const findCity = (name: string) => cityByName.get(name.trim().toLowerCase());
   const cityNames = region.cities.map((c) => c.name);
+  const nearestCity = (lat: number, lng: number) => {
+    let best: (typeof region.cities)[number] | undefined;
+    let bestKm = 80;
+    for (const c of region.cities) {
+      const km = distanceKm({ name: "", lat, lng }, c);
+      if (km < bestKm) [best, bestKm] = [c, km];
+    }
+    return best;
+  };
 
   return new ToolLoopAgent({
     model: agentModel(),
     instructions: instructions(request),
     stopWhen: isStepCount(12),
     maxRetries: 1,
+    // Small models sometimes drop a stop's city name but keep its coordinates.
+    // Fill the name back in from the region's city list instead of losing the run.
+    repairToolCall: async ({ toolCall }) => {
+      if (toolCall.toolName !== "submit_plan") return null;
+      try {
+        const input = JSON.parse(toolCall.input);
+        let changed = false;
+        for (const stop of input.stops ?? []) {
+          if (stop.city || typeof stop.lat !== "number" || typeof stop.lng !== "number") continue;
+          const city = nearestCity(stop.lat, stop.lng);
+          if (!city) continue;
+          stop.city = city.name;
+          stop.country ??= city.country;
+          changed = true;
+        }
+        return changed ? { ...toolCall, input: JSON.stringify(input) } : null;
+      } catch {
+        return null;
+      }
+    },
     tools: {
       audience_hotspots: tool({
         description: `Cities in ${region.label} where ${artist.name}'s taste audience is concentrated, from a Qloo heatmap. Scores 0-1.`,
